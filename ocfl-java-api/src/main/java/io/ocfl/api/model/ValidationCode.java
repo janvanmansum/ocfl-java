@@ -156,7 +156,10 @@ public enum ValidationCode {
     W012(Type.WARN),
     W013(Type.WARN),
     W014(Type.WARN),
-    W015(Type.WARN);
+    W015(Type.WARN),
+
+    EXTENSION_ERROR(Type.ERROR),
+    EXTENSION_WARNING(Type.WARN);
 
     public enum Type {
         INFO,

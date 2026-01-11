@@ -35,4 +35,12 @@ public interface OcflExtension {
      * @return extension name
      */
     String getExtensionName();
+
+    /**
+     * This method is called when an OCFL object is validated. It allows the extension to perform its own validation,
+     * and potentially fix issues by writing to its extension directory.
+     *
+     * @param context validation context
+     */
+    default void onValidate(ValidationContext context) {}
 }

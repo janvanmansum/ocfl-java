@@ -43,6 +43,9 @@ import io.ocfl.core.ObjectPaths;
 import io.ocfl.core.extension.storage.layout.FlatLayoutExtension;
 import io.ocfl.core.extension.storage.layout.HashedNTupleIdEncapsulationLayoutExtension;
 import io.ocfl.core.extension.storage.layout.HashedNTupleLayoutExtension;
+import io.ocfl.core.extension.OcflExtension;
+import io.ocfl.core.extension.OcflExtensionRegistry;
+import io.ocfl.core.extension.ValidationContext;
 import io.ocfl.core.storage.common.Listing;
 import io.ocfl.core.storage.common.Storage;
 import io.ocfl.core.storage.filesystem.FileSystemStorage;
@@ -867,24 +870,75 @@ public class Validator {
 
     private void validateExtensionContents(String objectRootPath, ValidationResultsBuilder results) {
         var dir = FileUtil.pathJoinFailEmpty(objectRootPath, OcflConstants.EXTENSIONS_DIR);
-        var files = listFiles(dir);
+        if (fileSystem.fileExists(dir)) {
+            var files = listFiles(dir);
 
-        for (var file : files) {
-            if (file.isDirectory()) {
-                if (!REGISTERED_EXTENSIONS.contains(file.getRelativePath())) {
+            for (var file : files) {
+                if (file.isDirectory()) {
+                    var extensionName = file.getRelativePath();
+                    if (!REGISTERED_EXTENSIONS.contains(extensionName)) {
+                        results.addIssue(
+                                ValidationCode.W013,
+                                "Object extensions directory %s contains unregistered extension %s",
+                                dir,
+                                extensionName);
+                    }
+
+                    OcflExtensionRegistry.lookup(extensionName).ifPresent(extension -> {
+                        try {
+                            extension.onValidate(new DefaultValidationContext(objectRootPath, 
+                                    FileUtil.pathJoinFailEmpty(dir, extensionName), results));
+                        } catch (RuntimeException e) {
+                            LOG.error("Failed to validate extension {}", extensionName, e);
+                            results.addIssue(
+                                    ValidationCode.W013,
+                                    "Extension %s failed validation: %s",
+                                    extensionName,
+                                    e.getMessage());
+                        }
+                    });
+                } else {
                     results.addIssue(
-                            ValidationCode.W013,
-                            "Object extensions directory %s contains unregistered extension %s",
+                            ValidationCode.E067,
+                            "Object extensions directory %s cannot contain file %s",
                             dir,
                             file.getRelativePath());
                 }
-            } else {
-                results.addIssue(
-                        ValidationCode.E067,
-                        "Object extensions directory %s cannot contain file %s",
-                        dir,
-                        file.getRelativePath());
             }
+        }
+    }
+
+    private class DefaultValidationContext implements ValidationContext {
+
+        private final String objectRootPath;
+        private final String extensionPath;
+        private final ValidationResultsBuilder results;
+
+        public DefaultValidationContext(
+                String objectRootPath, String extensionPath, ValidationResultsBuilder results) {
+            this.objectRootPath = objectRootPath;
+            this.extensionPath = extensionPath;
+            this.results = results;
+        }
+
+        @Override
+        public String getObjectRootPath() {
+            return objectRootPath;
+        }
+
+        @Override
+        public String getExtensionPath() {
+            return extensionPath;
+        }
+
+        @Override
+        public Storage getStorage() {
+            return fileSystem;
+        }
+
+        @Override
+        public void addIssue(ValidationCode code, String message, Object... args) {
+            results.addIssue(code, message, args);
         }
     }
 
