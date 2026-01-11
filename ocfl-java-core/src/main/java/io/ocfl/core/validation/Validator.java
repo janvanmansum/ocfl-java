@@ -43,7 +43,6 @@ import io.ocfl.core.ObjectPaths;
 import io.ocfl.core.extension.storage.layout.FlatLayoutExtension;
 import io.ocfl.core.extension.storage.layout.HashedNTupleIdEncapsulationLayoutExtension;
 import io.ocfl.core.extension.storage.layout.HashedNTupleLayoutExtension;
-import io.ocfl.core.extension.OcflExtension;
 import io.ocfl.core.extension.OcflExtensionRegistry;
 import io.ocfl.core.extension.ValidationContext;
 import io.ocfl.core.storage.common.Listing;
@@ -886,7 +885,7 @@ public class Validator {
 
                     OcflExtensionRegistry.lookup(extensionName).ifPresent(extension -> {
                         try {
-                            extension.onValidate(new DefaultValidationContext(objectRootPath, 
+                            extension.validate(new DefaultValidationContext(objectRootPath,
                                     FileUtil.pathJoinFailEmpty(dir, extensionName), results));
                         } catch (RuntimeException e) {
                             LOG.error("Failed to validate extension {}", extensionName, e);

@@ -93,7 +93,7 @@ public class ExtensionValidationTest {
         }
 
         @Override
-        public void onValidate(ValidationContext context) {
+        public void validate(ValidationContext context) {
             called.set(true);
             var storage = context.getStorage();
             var dataPath = context.getObjectRootPath() + "/data.txt";
